@@ -17,3 +17,4 @@ contract Voting {
 }
 
 //mapping后都需要加[]来表示具体的映射，总是会在hasvoted后面忘记[]
+//复习时event不会写
