@@ -10,5 +10,5 @@ contract HelloWorld {
       function setGreet(string memory newgreet) public{
         greet=newgreet;
       }//改变greet的值，此时函数可见性不能是view，因为需要输入更改，view为只读
-  //tese
+  //tese1
 }
