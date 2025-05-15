@@ -47,3 +47,4 @@ contract Crowfunding {
     }
     
 }
+//注意各函数时间戳，目标等逻辑
