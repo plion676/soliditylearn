@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bank 合约交互</title>
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.7.5/dist/web3.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans antialiased">
+  <div class="container mx-auto p-6">
+    <h1 class="text-3xl font-bold text-center mb-6 text-indigo-600">Bank 合约交互面板</h1>
+
+    <!-- 连接钱包按钮 -->
+    <div class="text-center mb-6">
+      <button id="connectBtn" class="bg-indigo-500 text-white px-6 py-2 rounded-lg shadow-md hover:bg-indigo-600">
+        连接 MetaMask 钱包
+      </button>
+      <p id="walletAddress" class="mt-2 text-gray-700 font-medium"></p>
+    </div>
+
+    <div class="flex justify-center space-x-4 mb-6">
+      <button onclick="getBalance()" class="bg-blue-500 text-white px-6 py-2 rounded-lg shadow-md hover:bg-blue-600">查看余额</button>
+      <button onclick="deposit()" class="bg-green-500 text-white px-6 py-2 rounded-lg shadow-md hover:bg-green-600">存款</button>
+      <button onclick="withdraw()" class="bg-red-500 text-white px-6 py-2 rounded-lg shadow-md hover:bg-red-600">取款</button>
+    </div>
+
+    <div class="flex justify-center space-x-4 mb-6">
+      <input id="depositAmount" type="number" placeholder="存款金额 (ETH)" class="p-3 rounded-md border border-gray-300" />
+      <input id="withdrawAmount" type="number" placeholder="取款金额 (ETH)" class="p-3 rounded-md border border-gray-300" />
+    </div>
+
+    <p id="status" class="text-center text-xl font-semibold text-gray-700"></p>
+
+    <h2 class="text-2xl font-bold text-center mt-8">交易记录</h2>
+    <ul id="transactionLogs" class="space-y-4 mt-4 max-w-lg mx-auto"></ul>
+  </div>
+
+  <script>
+    const contractAddress = "0x3cba9742db11d30d8850a483e3daa9a47d22584a";
+    const contractABI = [
+      {
+        "inputs": [],
+        "name": "deposit",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          { "indexed": false, "internalType": "address", "name": "user", "type": "address" },
+          { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
+        ],
+        "name": "deposited",
+        "type": "event"
+      },
+      {
+        "inputs": [
+          { "internalType": "uint256", "name": "amount", "type": "uint256" }
+        ],
+        "name": "withdraw",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          { "indexed": false, "internalType": "address", "name": "user", "type": "address" },
+          { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
+        ],
+        "name": "withdrawed",
+        "type": "event"
+      },
+      {
+        "inputs": [],
+        "name": "getContractBalances",
+        "outputs": [
+          { "internalType": "uint256", "name": "", "type": "uint256" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      }
+    ];
+
+    let web3;
+    let account;
+    let contract;
+
+    const connectBtn = document.getElementById("connectBtn");
+    const walletAddressDisplay = document.getElementById("walletAddress");
+    const statusDisplay = document.getElementById("status");
+    const transactionLogs = document.getElementById("transactionLogs");
+
+    // 连接钱包逻辑
+    connectBtn.onclick = async () => {
+      if (window.ethereum) {
+        web3 = new Web3(window.ethereum);
+        try {
+          const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+          account = accounts[0];
+          contract = new web3.eth.Contract(contractABI, contractAddress);
+          walletAddressDisplay.innerText = "已连接账户：" + account;
+          connectBtn.disabled = true;
+          connectBtn.innerText = "已连接";
+          setStatus("✅ 钱包连接成功");
+        } catch (error) {
+          setStatus("❌ 用户拒绝连接钱包");
+          console.error(error);
+        }
+      } else {
+        alert("请先安装 MetaMask 插件！");
+      }
+    };
+
+    function setStatus(msg) {
+      statusDisplay.innerText = msg;
+    }
+
+    function addTransactionLog(message) {
+      const logItem = document.createElement("li");
+      logItem.classList.add("p-4", "bg-gray-200", "rounded-lg", "shadow-sm");
+      logItem.innerText = message;
+      transactionLogs.prepend(logItem);
+    }
+
+    // 调用合约方法查看余额
+    async function getBalance() {
+      if (!contract || !account) {
+        setStatus("❌ 请先连接钱包");
+        return;
+      }
+      try {
+        const balance = await contract.methods.getContractBalances().call({ from: account });
+        setStatus("📦 当前合约余额：" + web3.utils.fromWei(balance, "ether") + " ETH");
+      } catch (err) {
+        setStatus("❌ 获取失败：" + err.message);
+      }
+    }
+
+    // 调用合约方法存款
+    async function deposit() {
+      if (!contract || !account) {
+        setStatus("❌ 请先连接钱包");
+        return;
+      }
+      const amount = document.getElementById("depositAmount").value;
+      if (!amount || amount <= 0) {
+        alert("请输入有效的存款金额");
+        return;
+      }
+      try {
+        await contract.methods.deposit().send({
+          from: account,
+          value: web3.utils.toWei(amount, "ether"),
+        });
+        setStatus("✅ 成功存入 " + amount + " ETH");
+        addTransactionLog("存款 " + amount + " ETH");
+      } catch (err) {
+        setStatus("❌ 存款失败：" + err.message);
+      }
+    }
+
+    // 调用合约方法取款
+    async function withdraw() {
+      if (!contract || !account) {
+        setStatus("❌ 请先连接钱包");
+        return;
+      }
+      const amount = document.getElementById("withdrawAmount").value;
+      if (!amount || amount <= 0) {
+        alert("请输入有效的取款金额");
+        return;
+      }
+      try {
+        await contract.methods.withdraw(web3.utils.toWei(amount, "ether")).send({
+          from: account,
+        });
+        setStatus("✅ 成功取出 " + amount + " ETH");
+        addTransactionLog("取款 " + amount + " ETH");
+      } catch (err) {
+        setStatus("❌ 取款失败：" + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
