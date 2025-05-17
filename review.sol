@@ -29,7 +29,7 @@ pragma solidity ^0.8.17;
     event contributed(address contributer,uint amount);
     event withdrawed(address owner,uint amount);
     event refunded(address refunder,uint amount);
-    mapping(address=>uint) balances;
+    mapping(address=>uint) contributions;
     constructor(uint fundinSeconds,uint _goal) {
         owner=msg.sender;
         deadline=block.timestamp+fundinSeconds;
@@ -39,7 +39,7 @@ pragma solidity ^0.8.17;
     function contribute() public payable{
         require(block.timestamp<=deadline,unicode"已截止");
         require(msg.value>0,unicode"捐赠金额不能为零");
-        balances[msg.sender]+=msg.value;
+        contributions[msg.sender]+=msg.value;
         totalRaised+=msg.value;
         emit contributed(msg.sender,msg.value);
     }
@@ -47,8 +47,10 @@ pragma solidity ^0.8.17;
     function refund() public {
         require(block.timestamp>=deadline,unicode"尚未结束");
         require(totalRaised<goal,unicode"众筹已成功");
-        uint amount=balances[msg.sender];
-        amount=balances[msg.sender];
+        uint amount=contributions[msg.sender];
+        require(amount>0,unicode"未捐款");
+        contributions[msg.sender] = 0;
+        totalRaised-=amount;
         payable(msg.sender).transfer(amount);
         emit refunded(msg.sender,amount);
     }
@@ -68,4 +70,6 @@ pragma solidity ^0.8.17;
     }
     
 }
+映射写成了balances，应写contributions，因为这是一个众筹项目，写余额并不是很严谨
+退款处忘记防止重入了，之前一直没注意过这个问题
 */
