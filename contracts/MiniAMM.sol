@@ -9,9 +9,9 @@ contract MiniAMM {
         xReserve=X;
         yReserve=Y;
     }
-    function swapXforY(uint amount)public view returns(uint dy,uint newY){
+    function swapXforY(uint amount)public view returns(uint dy){
         uint newX=xReserve+amount;
-        newY=xReserve*yReserve/newX;
+        uint newY=xReserve*yReserve/newX;
         require(newY>=yReserve/5, unicode"Y代币余量不足以兑换");
         dy=yReserve-newY;
     }
