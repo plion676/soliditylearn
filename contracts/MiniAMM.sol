@@ -5,15 +5,15 @@ contract MiniAMM {
 
     uint public xReserve;
     uint public yReserve;
-
     function init(uint X,uint Y) public{
         xReserve=X;
         yReserve=Y;
     }
-    function swapXforY(uint amount)public view returns(uint dy){
+    function swapXforY(uint amount)public view returns(uint dy,uint newY){
         uint newX=xReserve+amount;
-        uint newY=xReserve*yReserve/newX;
-        return yReserve-newY;
+        newY=xReserve*yReserve/newX;
+        require(newY>=yReserve/5, unicode"Y代币余量不足以兑换");
+        dy=yReserve-newY;
     }
     
 }
