@@ -7,8 +7,11 @@ contract MyERC20WithPermit is ERC20{
     mapping(address=>uint) public nonces;
     bytes32 public immutable DOMAIN_SEPARATOR;
 
-     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-    bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+    bytes32 public constant PERMIT_TYPEHASH = keccak256(
+    "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+);
+//类型哈希，将需要输入的类型转化成哈希值
+
 
     constructor(string memory name,string memory symbol) 
     ERC20(name,symbol){
@@ -16,9 +19,10 @@ contract MyERC20WithPermit is ERC20{
          assembly {
             chainId := chainid()
         }
-        DOMAIN_SEPARATOR=keccak256(
+        DOMAIN_SEPARATOR=keccak256(//分隔不同代币，版本，链，合约
             abi.encode(
-                PERMIT_TYPEHASH,
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                //开始写的是PERMIT_TYPEHASH，这是隔开链，合约等，不应用TYPEHASH
                 keccak256(bytes(name)),
                 keccak256(bytes("1")),
                 chainId,
@@ -41,7 +45,7 @@ contract MyERC20WithPermit is ERC20{
         bytes32 s
     ) external {
         require(block.timestamp<=deadline,"Expired");
-        bytes32 digest=keccak256(abi.encode
+        bytes32 digest=keccak256(abi.encodePacked//digest需要用encodePacked，需要符合EIP-712 的 EIP712Domain 结构
             ("\x19\x01",
             DOMAIN_SEPARATOR,
             keccak256(abi.encode(
@@ -49,8 +53,9 @@ contract MyERC20WithPermit is ERC20{
                 owner,
                 spender,
                 value,
-                deadline,
-                nonces[owner]++
+                nonces[owner]++,
+                deadline
+                
               ))
             )
         );
@@ -59,4 +64,35 @@ contract MyERC20WithPermit is ERC20{
         require(recover!=address(0)&&recover==owner,"Invalid signature");
         _approve(owner,spender,value);
     }
+    
+    function debugDigest(
+    address owner,
+    address spender,
+    uint256 value,
+    uint256 deadline
+) public view returns (bytes32) {
+    return keccak256(abi.encodePacked(
+        "\x19\x01",
+        DOMAIN_SEPARATOR,
+        keccak256(abi.encode(
+            PERMIT_TYPEHASH,
+            owner,
+            spender,
+            value,
+            nonces[owner],
+            deadline
+        ))
+    ));
 }
+
+}
+
+
+
+DOMAIN_SEPARATOR=keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(bytes(name)),
+                keccak256(bytes("1")),
+                chainId,
+                address(this)
