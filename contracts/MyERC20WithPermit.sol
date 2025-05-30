@@ -10,7 +10,7 @@ contract MyERC20WithPermit is ERC20{
     bytes32 public constant PERMIT_TYPEHASH = keccak256(
     "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
 );
-//类型哈希，将需要输入的类型转化成哈希值
+//类型哈希，将需要输入的类型转化成哈希值,一般的哈希转化都需要包含类型
 
 
     constructor(string memory name,string memory symbol) 
