@@ -18,7 +18,7 @@ contract Bank {
     }
     function getContractBalances() public view returns(uint){
         return balances[msg.sender];
-    }123213213
+    }//11111111
 }
 /*暂时没有找到withdraw中输入2就可以取出2eth的方法，问AI说是可以从前端改，如果用—*1ether的方法的话，
 好像不符合wei单位的统一标准，若是有很多合约，很麻烦。*/
